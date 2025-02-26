@@ -32,6 +32,8 @@ async def createBlog(post: BlogSchema , db:db_dependency):
         "content": post.content,
         "date": post.date
     }
+    db.add(blogModel(id=None, title=post.title, content=post.content, date=post.date))
+    db.commit()
     return JSONResponse(content=jsonable_encoder(response_data), status_code=201)
 
 
@@ -40,19 +42,29 @@ async def getAllBlogs( db: db_dependency):
     blogs = db.query(blogModel).all()
     return JSONResponse(content=jsonable_encoder(blogs), status_code=200)
 
-@blog.get("/get-blog/{id})")
+@blog.get("/get-blog/{id}")
 async def getBlog(id: int, db:db_dependency):
     blog = db.query(blogModel).filter(blogModel.id == id).first()
+
+    if blog is None:
+        raise HTTPException(status_code=404, detail="blog not found")
+
     return JSONResponse(content=jsonable_encoder(blog), status_code=200)
 
-@blog.put("/update-id/{id})")
+@blog.put("/update-blog/{id}")
 async def updateBlog(id:int, put: BlogSchema, db:db_dependency):
-    response_data ={
-        "title": put.title,
-        "content": put.content,
-        "date": put.date
-    }.where(blogModel.id == id)
-    return JSONResponse(content=jsonable_encoder(response_data), status_code=201)
+    blog = db.query(blogModel).filter(blogModel.id == id).first()
+    if blog is None:
+        raise HTTPException(status_code=404, detail="blog not found")
+    
+    blog.title = put.title
+    blog.content = put.content
+    blog.date = put.date
+
+    db.commit()
+    db.refresh(blog)
+    
+    return JSONResponse(content=jsonable_encoder(blog), status_code=200)
 
 
 @blog.delete("/delete-blog/{id}")
@@ -62,5 +74,5 @@ async def deleteBlog(id:int, db: db_dependency):
     if blog is None:
         raise HTTPException(status_code=404, detail="blog not found")
     db.delete(blog)
-    db.commit
+    db.commit()
     return {"message": "Blog deleted successfully"}
