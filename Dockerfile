@@ -3,6 +3,5 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 COPY . .
-ENV URL_DATABASE=postgresql://postgres:password@psql:5433/blog_api
 EXPOSE 8000
-CMD [ "uvicorn","index:app" ]
+CMD [ "uvicorn","index:app", "--host","0.0.0.0", "--port","8000" ]
