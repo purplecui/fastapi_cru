@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from config.db import Base
@@ -38,9 +38,21 @@ async def createBlog(post: BlogSchema , db:db_dependency):
 
 
 @blog.get("/get-blogs")
-async def getAllBlogs( db: db_dependency):
-    blogs = db.query(blogModel).all()
-    return JSONResponse(content=jsonable_encoder(blogs), status_code=200)
+async def getAllBlogs(
+    db: db_dependency,
+    page: int = Query(1, ge=1),
+    limit: int= Query(5,ge=1, le=100)
+):
+    skip = (page -1 ) * limit
+    total_count = db.query(blogModel).count()
+    blogs = db.query(blogModel).offset(skip).limit(limit).all()
+    return JSONResponse(content={
+        "total": total_count,
+        "page": page,
+        "limit": limit,
+        "blogs": jsonable_encoder(blogs)
+        }, 
+    status_code=200)
 
 @blog.get("/get-blog/{id}")
 async def getBlog(id: int, db:db_dependency):
